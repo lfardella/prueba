@@ -1,0 +1,21 @@
+{
+  "name": "prueba",
+  "version": "1.0.0",
+  "description": "Frontend project with Cypress testing",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "cypress run",
+    "test:open": "cypress open",
+    "test:headless": "cypress run --headless"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "cypress": "^13.6.0"
+  },
+  "keywords": ["frontend", "testing", "cypress"],
+  "author": "",
+  "license": "MIT"
+}
