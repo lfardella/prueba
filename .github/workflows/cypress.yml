@@ -1,0 +1,113 @@
+name: Cypress E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    
+    strategy:
+      matrix:
+        node-version: [20]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Start development server
+        run: npm run dev &
+        env:
+          CI: true
+          
+      - name: Wait for server to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+          
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+          headless: true
+          record: false
+          wait-on: 'http://localhost:5173'
+          wait-on-timeout: 120
+          config: video=false,screenshotOnRunFailure=true
+        env:
+          CYPRESS_baseUrl: http://localhost:5173
+          
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
+          
+      - name: Upload videos on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          retention-days: 7
+
+  # Optional: Run tests on multiple browsers
+  cypress-run-firefox:
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Start development server
+        run: npm run dev &
+        env:
+          CI: true
+          
+      - name: Wait for server to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+          
+      - name: Run Cypress tests on Firefox
+        uses: cypress-io/github-action@v6
+        with:
+          browser: firefox
+          headless: true
+          record: false
+          wait-on: 'http://localhost:5173'
+          wait-on-timeout: 120
+          config: video=false,screenshotOnRunFailure=true
+        env:
+          CYPRESS_baseUrl: http://localhost:5173
